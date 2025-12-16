@@ -1,0 +1,233 @@
+"use client";
+
+import { useId, useState } from "react";
+import "./page.css";
+
+function MoreText() {
+  return (
+    <>
+      <p>
+        The perfect taco is not just food—it's a carefully orchestrated symphony
+        of textures, flavors, and the quiet satisfaction of holding something
+        beautiful that's about to fall apart in your hands. Every bite should
+        tell a story: crispy, then soft, then tangy, then heat. If your taco
+        doesn't make you close your eyes mid-chew, you're doing it wrong and
+        should immediately start over with more cheese.
+      </p>
+
+      <ol>
+        <li>
+          Master the tortilla. (This is non-negotiable.) A great taco lives and
+          dies by its foundation, and store-bought is acceptable only if you
+          warm it properly—dry pan, medium heat, fifteen seconds per side, and a
+          light char if you're feeling brave.
+          <ol>
+            <li>
+              If you're making tortillas from scratch, use masa harina, warm
+              water, and a pinch of salt. Press them thin but not too thin, cook
+              until brown spots appear, and stack them under a towel to stay
+              soft. This is where champions are made.
+            </li>
+            <li>
+              Flour tortillas work too, especially for larger tacos or breakfast
+              variations. The key is to get them pliable enough to fold without
+              cracking—nobody wants a taco that shatters like a betrayal at
+              first bite.
+            </li>
+            <li>
+              Double up the tortillas if you're loading heavy. There's nothing
+              sadder than a structural failure mid-taco, and a second layer
+              provides insurance against juice, grease, and the general chaos of
+              a well-built bite.
+            </li>
+          </ol>
+        </li>
+        <li>
+          Season your protein like you mean it. Whether it's carne asada,
+          carnitas, or grilled fish, the meat should be seasoned aggressively
+          with cumin, chili powder, garlic, and lime. Underseasoned protein is a
+          crime against tacos, punishable by having to eat sad food you made
+          yourself.
+        </li>
+        <li>
+          Build with intention. Start with protein, add your crunch (cabbage,
+          radish, onion), then drizzle your sauce, and finish with fresh
+          cilantro and a squeeze of lime. The order matters—sauce under toppings
+          slides off, and cilantro buried beneath cheese is a waste of
+          everyone's time.
+        </li>
+      </ol>
+
+      <p>
+        For the love of all things delicious: do not skip the acid. A taco
+        without lime is like a joke without a punchline—technically complete,
+        but missing the thing that makes it worth telling. That bright squeeze
+        at the end lifts every other flavor and cuts through the richness like a
+        ray of citrus sunshine directly into your mouth.
+      </p>
+
+      <ul>
+        <li>
+          Essential toppings to keep on hand:
+          <ul>
+            <li>
+              Pickled red onions—they take five minutes to make and last for
+              weeks in your fridge. Slice thin, douse in lime juice and a pinch
+              of salt, and let them sit while you cook everything else. The pink
+              color alone is worth it.
+            </li>
+            <li>
+              A good salsa verde made from roasted tomatillos, serranos, garlic,
+              and cilantro. It should be bright, tangy, and just spicy enough to
+              make you reach for your drink but not so hot that you can't taste
+              anything else.
+            </li>
+            <li>
+              Crema or sour cream thinned with lime juice. This provides the
+              cooling contrast that balances heat and lets you go harder on the
+              hot sauce without regret. Drizzle in zigzags for maximum coverage
+              and visual drama.
+            </li>
+          </ul>
+        </li>
+        <li>
+          Fresh cilantro is not optional. If you have the gene that makes
+          cilantro taste like soap, you have my sympathy, but the rest of us
+          cannot imagine a taco without that bright, herby punch. Use the leaves
+          and the tender stems—don't waste the good stuff.
+        </li>
+        <li>
+          Cotija cheese crumbled on top adds salty, funky depth that melty
+          cheeses simply cannot provide. It doesn't melt, it seasons—each bite
+          gets a little hit of aged dairy glory that makes everything around it
+          taste more like itself.
+        </li>
+      </ul>
+
+      <p>
+        Now go forth and build tacos that would make a street vendor nod in
+        quiet approval. Remember: the best taco is the one you're eating right
+        now, with your hands, over a plate because things will drip, and that's
+        exactly how it should be. Perfection is messy. Embrace the chaos.
+      </p>
+    </>
+  );
+}
+
+function FewerText() {
+  return (
+    <>
+      <p>
+        A great taco is simple: warm tortilla, well-seasoned protein, fresh
+        toppings, and a squeeze of lime. That's it. Don't overthink it.
+      </p>
+
+      <ol>
+        <li>
+          Get your tortilla right.
+          <ol>
+            <li>Warm it in a dry pan until pliable.</li>
+            <li>Double up for structural integrity.</li>
+            <li>Never microwave—that's just sad.</li>
+          </ol>
+        </li>
+        <li>Season your meat aggressively.</li>
+        <li>Build smart—protein, crunch, sauce, cilantro, lime.</li>
+      </ol>
+
+      <p>
+        The secret is acid. Lime juice ties everything together and makes each
+        bite sing.
+      </p>
+
+      <ul>
+        <li>
+          Essential toppings:
+          <ul>
+            <li>Pickled red onions.</li>
+            <li>Fresh salsa verde.</li>
+            <li>Crema thinned with lime.</li>
+          </ul>
+        </li>
+        <li>Cilantro is not optional.</li>
+        <li>Cotija cheese for salty, crumbly goodness.</li>
+      </ul>
+
+      <p>Now go make tacos. Messy hands, happy heart.</p>
+    </>
+  );
+}
+
+export default function ListStylePage() {
+  const sliderId = useId();
+  const textAmountId = useId();
+  const [fontSize, setFontSize] = useState(16);
+  const [textAmount, setTextAmount] = useState<"fewer" | "more">("more");
+
+  return (
+    <>
+      <div className="fixed top-0 left-0 right-0 z-50 bg-background border-b border-gray-200 dark:border-gray-800 shadow-sm">
+        <div className="max-w-7xl mx-auto px-4 py-4">
+          <div className="flex flex-wrap items-center gap-6">
+            <div className="flex items-center gap-3">
+              <label htmlFor={sliderId}>
+                Font Size: <span>{fontSize}</span>px
+              </label>
+              <input
+                id={sliderId}
+                type="range"
+                min={14}
+                max={24}
+                value={fontSize}
+                onChange={(e) => setFontSize(e.currentTarget.valueAsNumber)}
+                className="w-32"
+              />
+            </div>
+
+            <div className="flex items-center gap-4">
+              <div id={textAmountId}>Text amount</div>
+              <div
+                role="radiogroup"
+                aria-labelledby={textAmountId}
+                className="flex items-center gap-4"
+              >
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="radio"
+                    name="textAmount"
+                    value="more"
+                    checked={textAmount === "more"}
+                    onChange={(e) =>
+                      setTextAmount(e.target.value as "fewer" | "more")
+                    }
+                    className="cursor-pointer"
+                  />
+                  <span>More</span>
+                </label>
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="radio"
+                    name="textAmount"
+                    value="fewer"
+                    checked={textAmount === "fewer"}
+                    onChange={(e) =>
+                      setTextAmount(e.target.value as "fewer" | "more")
+                    }
+                    className="cursor-pointer"
+                  />
+                  <span>Fewer</span>
+                </label>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div
+        className="max-w-[60ch] mx-auto mt-24 px-4"
+        style={{ fontSize: `${fontSize}px` }}
+      >
+        {textAmount === "fewer" ? <FewerText /> : <MoreText />}
+      </div>
+    </>
+  );
+}
