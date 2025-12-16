@@ -169,41 +169,42 @@ export default function ListStylePage() {
 
   return (
     <>
-      <div className="fixed top-0 left-0 right-0 z-50 bg-background border-b border-border shadow-sm">
-        <div className="max-w-2xl mx-auto px-4 py-3">
-          <div className="flex flex-wrap items-center gap-6">
-            <div className="flex items-center gap-3">
-              <Label htmlFor={sliderId} className="text-sm whitespace-nowrap">
-                Font Size: <span className="tabular-nums">{fontSize}</span>px
-              </Label>
-              <Slider
-                id={sliderId}
-                min={14}
-                max={24}
-                value={[fontSize]}
-                onValueChange={([val]) => setFontSize(val)}
-                className="w-32"
-              />
-            </div>
+      <div className="fixed top-4 left-1/2 -translate-x-1/2 z-50 w-full max-w-2xl bg-background/80 backdrop-blur-sm border-[0.5px] drop-shadow-xs rounded-xl px-4 py-3">
+        <div className="flex flex-wrap items-center gap-6">
+          <div className="flex items-center gap-3">
+            <Label htmlFor={sliderId} className="text-sm whitespace-nowrap">
+              Font Size: <span className="tabular-nums">{fontSize}</span>px
+            </Label>
+            <Slider
+              id={sliderId}
+              min={14}
+              max={24}
+              value={[fontSize]}
+              onValueChange={([val]) => setFontSize(val)}
+              className="w-32"
+            />
+          </div>
 
-            <div className="flex irems-center gap-3">
-              <Label className="text-sm">Text amount</Label>
-              <ToggleGroup
-                type="single"
-                value={textAmount}
-                onValueChange={(val) => {
-                  if (val) setTextAmount(val as "fewer" | "more");
-                }}
-                variant="outline"
-              >
-                <ToggleGroupItem value="more" aria-label="More text">
-                  More
-                </ToggleGroupItem>
-                <ToggleGroupItem value="fewer" aria-label="Fewer text">
-                  Fewer
-                </ToggleGroupItem>
-              </ToggleGroup>
-            </div>
+          <div className="flex irems-center gap-3">
+            <Label className="text-sm">Text amount</Label>
+            <ToggleGroup
+              type="single"
+              value={textAmount}
+              onValueChange={(val) => {
+                if (val) setTextAmount(val as "fewer" | "more");
+              }}
+              variant="outline"
+            >
+              <ToggleGroupItem value="more" aria-label="More text">
+                More
+              </ToggleGroupItem>
+              <ToggleGroupItem value="fewer" aria-label="Fewer text">
+                Fewer
+              </ToggleGroupItem>
+            </ToggleGroup>
+          </div>
+
+          <div className="ml-auto">
             <Button asChild>
               <a
                 href="https://github.com/levinsondk/share-sandbox/blob/main/src/app/list-style/"
@@ -218,7 +219,7 @@ export default function ListStylePage() {
         </div>
       </div>
       <div
-        className="max-w-2xl mx-auto mt-20 px-4"
+        className="max-w-2xl mx-auto my-25 px-4"
         style={{ fontSize: `${fontSize}px` }}
       >
         {textAmount === "fewer" ? <FewerText /> : <MoreText />}
