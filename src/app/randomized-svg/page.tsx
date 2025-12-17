@@ -101,8 +101,8 @@ function RandomizedSvg({
     <div
       style={{
         background: data.bg.color,
-        width: 120,
-        height: 120,
+        width: BOX_SIZE * 1.2,
+        height: BOX_SIZE * 1.2,
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
@@ -110,12 +110,7 @@ function RandomizedSvg({
         overflow: "hidden",
       }}
     >
-      <svg
-        width="120"
-        height="120"
-        viewBox={`0 0 ${BOX_SIZE} ${BOX_SIZE}`}
-        fill="none"
-      >
+      <svg width={BOX_SIZE} height={BOX_SIZE} fill="none">
         <path d={data.pathString} fill={data.fill} />
       </svg>
     </div>
@@ -128,7 +123,7 @@ export default function RandomizedSvgPage() {
   >(null);
   useEffect(() => {
     // This only runs on the client after hydration
-    setSvgDataList(Array.from({ length: 8 }, () => generateRandomSvg()));
+    setSvgDataList(Array.from({ length: 15 }, () => generateRandomSvg()));
   }, []);
   if (!svgDataList) {
     // Show nothing or a loading state during SSR and initial hydration
@@ -136,7 +131,7 @@ export default function RandomizedSvgPage() {
   }
 
   return (
-    <div style={{ display: "flex", gap: 16, flexWrap: "wrap", padding: 32 }}>
+    <div className="m-auto flex w-full max-w-3xl min-h-screen justify-center content-center p-8 gap-4 flex-wrap">
       {svgDataList.map((data, index) => (
         <RandomizedSvg key={index} data={data} />
       ))}

@@ -1,0 +1,55 @@
+.notebookBlocks > * {
+  font-size: 0.875rem; /* 14px */
+  font-family: var(--font-mono);
+  margin: 1.5em 0; /* simulate line breaks between blocks */
+  line-height: 1.5em;
+}
+
+.notebookBlocks > h1,
+.notebookBlocks > h2,
+.notebookBlocks > h3,
+.notebookBlocks > h4,
+.notebookBlocks > h5,
+.notebookBlocks > h6,
+.notebookBlocks > strong {
+  font-weight: 700;
+}
+
+/* Default(ish) styling */
+
+h1 {
+  font-size: 2rem;
+  font-weight: 600;
+  line-height: 1.2;
+  margin-top: 1.5em;
+  margin-bottom: 0.75em;
+  letter-spacing: -0.03em;
+}
+
+h2 {
+  font-size: 1.5rem;
+  font-weight: 600;
+  line-height: 1.3;
+  margin-top: 1.5em;
+  margin-bottom: 0.75em;
+  letter-spacing: -0.02em;
+}
+
+h3 {
+  font-size: 1.25rem;
+  font-weight: 600;
+  line-height: 1.4;
+  margin-top: 1.25em;
+  margin-bottom: 0.5em;
+  letter-spacing: -0.01em;
+}
+
+p,
+ul,
+ol,
+pre {
+  font-size: 1.125rem;
+  line-height: 1.5em;
+  margin-top: 1em;
+  margin-bottom: 1em;
+}
