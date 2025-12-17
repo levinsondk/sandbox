@@ -12,12 +12,12 @@ const BG_COLORS = [
 ];
 const BOX_SIZE = 100;
 const CENTER = BOX_SIZE / 2;
-const MIN_RADIUS = 5;
-const MAX_RADIUS = 45;
-const MIN_RADIUS_EVEN = 40;
-const MAX_RADIUS_EVEN = 75;
-const MIN_RADIUS_ODD = 40;
-const MAX_RADIUS_ODD = 15;
+const MIN_RADIUS_EVEN = 30;
+const MAX_RADIUS_EVEN = 50;
+const MIN_RADIUS_ODD = 5;
+const MAX_RADIUS_ODD = 20;
+const MIN_VERTEX_COUNT = 6;
+const MAX_VERTEX_COUNT = 12;
 
 function generateConstrainedVertex(
   vertexIndex: number,
@@ -45,8 +45,19 @@ function generateConstrainedVertex(
   return { x: Math.round(x), y: Math.round(y) };
 }
 
+function getVertexCount() {
+  let vertexCount =
+    Math.floor(Math.random() * (MAX_VERTEX_COUNT + 1)) + MIN_VERTEX_COUNT;
+  if (vertexCount % 2 === 0) {
+    return vertexCount;
+  } else {
+    vertexCount++;
+    return vertexCount;
+  }
+}
+
 function generateRandomSvg() {
-  const vertexCount = Math.floor(Math.random() * 12) + 6;
+  const vertexCount = getVertexCount();
   const bg = BG_COLORS[Math.floor(Math.random() * BG_COLORS.length)];
 
   // Generate first vertex
