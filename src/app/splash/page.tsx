@@ -36,6 +36,8 @@ interface SplashConfig {
   useStraightLines: boolean;
   innerCornerRadius: number;
   outerCornerRadius: number;
+  centerX: number;
+  centerY: number;
 }
 
 function generateSplashPath(
@@ -266,6 +268,8 @@ export default function SplashPage() {
     useStraightLines: false,
     innerCornerRadius: 0,
     outerCornerRadius: 0,
+    centerX: CENTER,
+    centerY: CENTER,
   }));
 
   const [initialSeedSet, setInitialSeedSet] = useState(false);
@@ -287,7 +291,7 @@ export default function SplashPage() {
     setConfig((prev) => ({ ...prev, [key]: value }));
   }, []);
 
-  const path = generateSplashPath(CENTER, CENTER, config);
+  const path = generateSplashPath(config.centerX, config.centerY, config);
 
   const svgCode = `<svg width="${SVG_SIZE}" height="${SVG_SIZE}" viewBox="0 0 ${SVG_SIZE} ${SVG_SIZE}" fill="none" xmlns="http://www.w3.org/2000/svg">
   <path d="${path}" fill="${config.color}"/>
@@ -374,6 +378,32 @@ export default function SplashPage() {
             step={1}
             unit="px"
           />
+
+          <div className="pt-2 border-t">
+            <h3 className="font-medium text-sm mb-4 text-muted-foreground">Position</h3>
+
+            <div className="space-y-6">
+              <SliderControl
+                label="Center X"
+                value={config.centerX}
+                onChange={(v) => updateConfig("centerX", v)}
+                min={0}
+                max={SVG_SIZE}
+                step={1}
+                unit="px"
+              />
+
+              <SliderControl
+                label="Center Y"
+                value={config.centerY}
+                onChange={(v) => updateConfig("centerY", v)}
+                min={0}
+                max={SVG_SIZE}
+                step={1}
+                unit="px"
+              />
+            </div>
+          </div>
 
           <div className="pt-2 border-t">
             <h3 className="font-medium text-sm mb-3 text-muted-foreground">Shape Mode</h3>
