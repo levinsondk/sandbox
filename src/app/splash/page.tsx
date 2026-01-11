@@ -30,6 +30,8 @@ interface SplashConfig {
   innerRadius: number;
   radiusVariance: number;
   angleVariance: number;
+  centerOffsetX: number;
+  centerOffsetY: number;
   seed: number;
   color: string;
 }
@@ -39,7 +41,7 @@ function generateSplashPath(
   cy: number,
   config: SplashConfig
 ): string {
-  const { numPoints, outerRadius, innerRadius, radiusVariance, angleVariance, seed } = config;
+  const { numPoints, outerRadius, innerRadius, radiusVariance, angleVariance, centerOffsetX, centerOffsetY, seed } = config;
   const random = mulberry32(seed);
 
   const points: { outer: { x: number; y: number }; inner: { x: number; y: number } }[] = [];
@@ -58,14 +60,22 @@ function generateSplashPath(
     const outerR = outerRadius * (1 + (random() - 0.5) * radiusVariance);
     const innerR = innerRadius * (1 + (random() - 0.5) * radiusVariance);
 
+    // Adjust radius based on center offset
+    // Points in the direction of offset get shorter radii, opposite points get longer radii
+    const outerRadiusAdjustment = centerOffsetX * Math.cos(outerAngle) + centerOffsetY * Math.sin(outerAngle);
+    const innerRadiusAdjustment = centerOffsetX * Math.cos(innerAngle) + centerOffsetY * Math.sin(innerAngle);
+
+    const adjustedOuterR = outerR - outerRadiusAdjustment;
+    const adjustedInnerR = innerR - innerRadiusAdjustment;
+
     points.push({
       outer: {
-        x: cx + Math.cos(outerAngle) * outerR,
-        y: cy + Math.sin(outerAngle) * outerR,
+        x: cx + Math.cos(outerAngle) * adjustedOuterR,
+        y: cy + Math.sin(outerAngle) * adjustedOuterR,
       },
       inner: {
-        x: cx + Math.cos(innerAngle) * innerR,
-        y: cy + Math.sin(innerAngle) * innerR,
+        x: cx + Math.cos(innerAngle) * adjustedInnerR,
+        y: cy + Math.sin(innerAngle) * adjustedInnerR,
       },
     });
   }
@@ -135,6 +145,8 @@ export default function SplashPage() {
     innerRadius: 70,
     radiusVariance: 0.3,
     angleVariance: 0.4,
+    centerOffsetX: 0,
+    centerOffsetY: 0,
     seed: 12345, // Default seed for SSR
     color: "#FF6B6B",
   }));
@@ -245,6 +257,32 @@ export default function SplashPage() {
             step={1}
             unit="px"
           />
+
+          <div className="pt-2 border-t">
+            <h3 className="font-medium text-sm mb-4 text-muted-foreground">Center Offset</h3>
+
+            <div className="space-y-6">
+              <SliderControl
+                label="Center Offset X"
+                value={config.centerOffsetX}
+                onChange={(v) => updateConfig("centerOffsetX", v)}
+                min={-100}
+                max={100}
+                step={1}
+                unit="px"
+              />
+
+              <SliderControl
+                label="Center Offset Y"
+                value={config.centerOffsetY}
+                onChange={(v) => updateConfig("centerOffsetY", v)}
+                min={-100}
+                max={100}
+                step={1}
+                unit="px"
+              />
+            </div>
+          </div>
 
           <div className="pt-2 border-t">
             <h3 className="font-medium text-sm mb-4 text-muted-foreground">Randomness</h3>
