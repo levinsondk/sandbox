@@ -54,11 +54,17 @@ function generateSplashPath(
     seed,
     useStraightLines,
     innerCornerRadius,
-    outerCornerRadius
+    outerCornerRadius,
+    centerX,
+    centerY
   } = config;
   const random = mulberry32(seed);
 
   const points: { outer: { x: number; y: number }; inner: { x: number; y: number } }[] = [];
+
+  // Inner points center is offset from outer points center
+  const innerCx = cx + centerX;
+  const innerCy = cy + centerY;
 
   for (let i = 0; i < numPoints; i++) {
     const baseAngle = (i / numPoints) * Math.PI * 2;
@@ -80,8 +86,8 @@ function generateSplashPath(
         y: cy + Math.sin(outerAngle) * outerR,
       },
       inner: {
-        x: cx + Math.cos(innerAngle) * innerR,
-        y: cy + Math.sin(innerAngle) * innerR,
+        x: innerCx + Math.cos(innerAngle) * innerR,
+        y: innerCy + Math.sin(innerAngle) * innerR,
       },
     });
   }
@@ -268,8 +274,8 @@ export default function SplashPage() {
     useStraightLines: false,
     innerCornerRadius: 0,
     outerCornerRadius: 0,
-    centerX: CENTER,
-    centerY: CENTER,
+    centerX: 0,
+    centerY: 0,
   }));
 
   const [initialSeedSet, setInitialSeedSet] = useState(false);
@@ -291,7 +297,7 @@ export default function SplashPage() {
     setConfig((prev) => ({ ...prev, [key]: value }));
   }, []);
 
-  const path = generateSplashPath(config.centerX, config.centerY, config);
+  const path = generateSplashPath(CENTER, CENTER, config);
 
   const svgCode = `<svg width="${SVG_SIZE}" height="${SVG_SIZE}" viewBox="0 0 ${SVG_SIZE} ${SVG_SIZE}" fill="none" xmlns="http://www.w3.org/2000/svg">
   <path d="${path}" fill="${config.color}"/>
@@ -326,7 +332,6 @@ export default function SplashPage() {
           <path
             d={path}
             fill={config.color}
-            className="transition-all duration-150"
           />
         </svg>
       </div>
@@ -380,25 +385,25 @@ export default function SplashPage() {
           />
 
           <div className="pt-2 border-t">
-            <h3 className="font-medium text-sm mb-4 text-muted-foreground">Position</h3>
+            <h3 className="font-medium text-sm mb-4 text-muted-foreground">Center Offset</h3>
 
             <div className="space-y-6">
               <SliderControl
-                label="Center X"
+                label="Offset X"
                 value={config.centerX}
                 onChange={(v) => updateConfig("centerX", v)}
-                min={0}
-                max={SVG_SIZE}
+                min={-100}
+                max={100}
                 step={1}
                 unit="px"
               />
 
               <SliderControl
-                label="Center Y"
+                label="Offset Y"
                 value={config.centerY}
                 onChange={(v) => updateConfig("centerY", v)}
-                min={0}
-                max={SVG_SIZE}
+                min={-100}
+                max={100}
                 step={1}
                 unit="px"
               />
