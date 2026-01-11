@@ -1,10 +1,3 @@
-import { Metadata } from "next";
-
-export const metadata: Metadata = {
-  title: "Splash Generator | lvnsn sndbx",
-  description: "Create parametric splash-like star shapes with sharp outer points and curved inner valleys",
-};
-
 "use client";
 
 import { useState, useCallback, useSyncExternalStore } from "react";

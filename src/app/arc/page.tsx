@@ -1,10 +1,3 @@
-import { Metadata } from "next";
-
-export const metadata: Metadata = {
-  title: "SVG Arc Visualizer | lvnsn sndbx",
-  description: "Interactive tool for understanding and experimenting with SVG arc paths",
-};
-
 "use client";
 
 import { useState } from "react";

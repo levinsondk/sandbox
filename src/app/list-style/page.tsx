@@ -1,10 +1,3 @@
-import { Metadata } from "next";
-
-export const metadata: Metadata = {
-  title: "List Styles | lvnsn sndbx",
-  description: "Exploring different list styling and typography options",
-};
-
 "use client";
 
 import { useState } from "react";

@@ -1,10 +1,3 @@
-import { Metadata } from "next";
-
-export const metadata: Metadata = {
-  title: "Drag Motion | lvnsn sndbx",
-  description: "Interactive drag and motion demo with Framer Motion",
-};
-
 "use client";
 
 import { motion } from "motion/react";
