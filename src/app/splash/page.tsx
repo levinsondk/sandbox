@@ -181,7 +181,7 @@ export default function SplashPage() {
   }
 
   return (
-    <div className="h-screen flex flex-col bg-background overflow-hidden">
+    <div className="h-dvh flex flex-col bg-background overflow-hidden">
       {/* Top Third - Fixed Preview */}
       <div className="h-1/3 flex items-center justify-center bg-muted/20 border-b">
         <svg
