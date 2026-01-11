@@ -62,9 +62,9 @@ function generateSplashPath(
 
   const points: { outer: { x: number; y: number }; inner: { x: number; y: number } }[] = [];
 
-  // Inner points center is offset from outer points center
-  const innerCx = cx + centerX;
-  const innerCy = cy + centerY;
+  // Apply center offset to the entire shape
+  const offsetCx = cx + centerX;
+  const offsetCy = cy + centerY;
 
   for (let i = 0; i < numPoints; i++) {
     const baseAngle = (i / numPoints) * Math.PI * 2;
@@ -82,12 +82,12 @@ function generateSplashPath(
 
     points.push({
       outer: {
-        x: cx + Math.cos(outerAngle) * outerR,
-        y: cy + Math.sin(outerAngle) * outerR,
+        x: offsetCx + Math.cos(outerAngle) * outerR,
+        y: offsetCy + Math.sin(outerAngle) * outerR,
       },
       inner: {
-        x: innerCx + Math.cos(innerAngle) * innerR,
-        y: innerCy + Math.sin(innerAngle) * innerR,
+        x: offsetCx + Math.cos(innerAngle) * innerR,
+        y: offsetCy + Math.sin(innerAngle) * innerR,
       },
     });
   }
@@ -299,6 +299,9 @@ export default function SplashPage() {
 
   const path = generateSplashPath(CENTER, CENTER, config);
 
+  // Generate a key to force re-render when shape changes significantly
+  const pathKey = `${config.numPoints}-${config.outerRadius}-${config.innerRadius}-${config.seed}-${config.useStraightLines}-${config.innerCornerRadius}-${config.outerCornerRadius}-${config.centerX}-${config.centerY}`;
+
   const svgCode = `<svg width="${SVG_SIZE}" height="${SVG_SIZE}" viewBox="0 0 ${SVG_SIZE} ${SVG_SIZE}" fill="none" xmlns="http://www.w3.org/2000/svg">
   <path d="${path}" fill="${config.color}"/>
 </svg>`;
@@ -330,6 +333,7 @@ export default function SplashPage() {
           className="w-full h-full max-w-[300px] max-h-[300px] p-4"
         >
           <path
+            key={pathKey}
             d={path}
             fill={config.color}
           />
