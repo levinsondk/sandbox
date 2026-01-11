@@ -1,3 +1,10 @@
+import { Metadata } from "next";
+
+export const metadata: Metadata = {
+  title: "Markdown Display | lvnsn sndbx",
+  description: "Experimenting with markdown and code block styling",
+};
+
 "use client";
 
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
