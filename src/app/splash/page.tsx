@@ -31,13 +31,13 @@ interface SplashConfig {
   innerRadius: number;
   radiusVariance: number;
   angleVariance: number;
+  centerOffsetX: number;
+  centerOffsetY: number;
   seed: number;
   color: string;
   useStraightLines: boolean;
   innerCornerRadius: number;
   outerCornerRadius: number;
-  centerX: number;
-  centerY: number;
 }
 
 function generateSplashPath(
@@ -51,20 +51,16 @@ function generateSplashPath(
     innerRadius,
     radiusVariance,
     angleVariance,
+    centerOffsetX,
+    centerOffsetY,
     seed,
     useStraightLines,
     innerCornerRadius,
     outerCornerRadius,
-    centerX,
-    centerY
   } = config;
   const random = mulberry32(seed);
 
   const points: { outer: { x: number; y: number }; inner: { x: number; y: number } }[] = [];
-
-  // Apply center offset to the entire shape
-  const offsetCx = cx + centerX;
-  const offsetCy = cy + centerY;
 
   for (let i = 0; i < numPoints; i++) {
     const baseAngle = (i / numPoints) * Math.PI * 2;
@@ -80,14 +76,22 @@ function generateSplashPath(
     const outerR = outerRadius * (1 + (random() - 0.5) * radiusVariance);
     const innerR = innerRadius * (1 + (random() - 0.5) * radiusVariance);
 
+    // Adjust radius based on center offset
+    // Points in the direction of offset get shorter radii, opposite points get longer radii
+    const outerRadiusAdjustment = centerOffsetX * Math.cos(outerAngle) + centerOffsetY * Math.sin(outerAngle);
+    const innerRadiusAdjustment = centerOffsetX * Math.cos(innerAngle) + centerOffsetY * Math.sin(innerAngle);
+
+    const adjustedOuterR = outerR - outerRadiusAdjustment;
+    const adjustedInnerR = innerR - innerRadiusAdjustment;
+
     points.push({
       outer: {
-        x: offsetCx + Math.cos(outerAngle) * outerR,
-        y: offsetCy + Math.sin(outerAngle) * outerR,
+        x: cx + Math.cos(outerAngle) * adjustedOuterR,
+        y: cy + Math.sin(outerAngle) * adjustedOuterR,
       },
       inner: {
-        x: offsetCx + Math.cos(innerAngle) * innerR,
-        y: offsetCy + Math.sin(innerAngle) * innerR,
+        x: cx + Math.cos(innerAngle) * adjustedInnerR,
+        y: cy + Math.sin(innerAngle) * adjustedInnerR,
       },
     });
   }
@@ -269,13 +273,13 @@ export default function SplashPage() {
     innerRadius: 70,
     radiusVariance: 0.3,
     angleVariance: 0.4,
+    centerOffsetX: 0,
+    centerOffsetY: 0,
     seed: 12345, // Default seed for SSR
     color: "#FF6B6B",
     useStraightLines: false,
     innerCornerRadius: 0,
     outerCornerRadius: 0,
-    centerX: 0,
-    centerY: 0,
   }));
 
   const [initialSeedSet, setInitialSeedSet] = useState(false);
@@ -300,7 +304,7 @@ export default function SplashPage() {
   const path = generateSplashPath(CENTER, CENTER, config);
 
   // Generate a key to force re-render when shape changes significantly
-  const pathKey = `${config.numPoints}-${config.outerRadius}-${config.innerRadius}-${config.seed}-${config.useStraightLines}-${config.innerCornerRadius}-${config.outerCornerRadius}-${config.centerX}-${config.centerY}`;
+  const pathKey = `${config.numPoints}-${config.outerRadius}-${config.innerRadius}-${config.seed}-${config.useStraightLines}-${config.innerCornerRadius}-${config.outerCornerRadius}-${config.centerOffsetX}-${config.centerOffsetY}`;
 
   const svgCode = `<svg width="${SVG_SIZE}" height="${SVG_SIZE}" viewBox="0 0 ${SVG_SIZE} ${SVG_SIZE}" fill="none" xmlns="http://www.w3.org/2000/svg">
   <path d="${path}" fill="${config.color}"/>
@@ -393,9 +397,9 @@ export default function SplashPage() {
 
             <div className="space-y-6">
               <SliderControl
-                label="Offset X"
-                value={config.centerX}
-                onChange={(v) => updateConfig("centerX", v)}
+                label="Center Offset X"
+                value={config.centerOffsetX}
+                onChange={(v) => updateConfig("centerOffsetX", v)}
                 min={-100}
                 max={100}
                 step={1}
@@ -403,9 +407,9 @@ export default function SplashPage() {
               />
 
               <SliderControl
-                label="Offset Y"
-                value={config.centerY}
-                onChange={(v) => updateConfig("centerY", v)}
+                label="Center Offset Y"
+                value={config.centerOffsetY}
+                onChange={(v) => updateConfig("centerOffsetY", v)}
                 min={-100}
                 max={100}
                 step={1}
