@@ -4,6 +4,7 @@ import { useState, useCallback, useSyncExternalStore } from "react";
 import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
 import { Label } from "@/components/ui/label";
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 
 // Mulberry32 PRNG for seeded randomness
 function mulberry32(seed: number) {
@@ -34,6 +35,9 @@ interface SplashConfig {
   centerOffsetY: number;
   seed: number;
   color: string;
+  useStraightLines: boolean;
+  innerCornerRadius: number;
+  outerCornerRadius: number;
 }
 
 function generateSplashPath(
@@ -41,7 +45,19 @@ function generateSplashPath(
   cy: number,
   config: SplashConfig
 ): string {
-  const { numPoints, outerRadius, innerRadius, radiusVariance, angleVariance, centerOffsetX, centerOffsetY, seed } = config;
+  const {
+    numPoints,
+    outerRadius,
+    innerRadius,
+    radiusVariance,
+    angleVariance,
+    centerOffsetX,
+    centerOffsetY,
+    seed,
+    useStraightLines,
+    innerCornerRadius,
+    outerCornerRadius,
+  } = config;
   const random = mulberry32(seed);
 
   const points: { outer: { x: number; y: number }; inner: { x: number; y: number } }[] = [];
@@ -80,15 +96,127 @@ function generateSplashPath(
     });
   }
 
-  // Build SVG path using quadratic Bézier curves
-  let d = `M ${points[0].outer.x.toFixed(2)} ${points[0].outer.y.toFixed(2)}`;
-  for (let i = 0; i < numPoints; i++) {
-    const next = (i + 1) % numPoints;
-    d += ` Q ${points[i].inner.x.toFixed(2)} ${points[i].inner.y.toFixed(2)} ${points[next].outer.x.toFixed(2)} ${points[next].outer.y.toFixed(2)}`;
-  }
-  d += " Z";
+  if (useStraightLines) {
+    // Straight lines mode: alternate between outer and inner points
+    // Create path with corner rounding
+    const allPoints: Array<{ x: number; y: number; radius: number }> = [];
+    for (let i = 0; i < numPoints; i++) {
+      allPoints.push({ ...points[i].outer, radius: outerCornerRadius });
+      allPoints.push({ ...points[i].inner, radius: innerCornerRadius });
+    }
 
+    if (innerCornerRadius === 0 && outerCornerRadius === 0) {
+      // No corner rounding - simple straight lines
+      let d = `M ${allPoints[0].x.toFixed(2)} ${allPoints[0].y.toFixed(2)}`;
+      for (let i = 1; i < allPoints.length; i++) {
+        d += ` L ${allPoints[i].x.toFixed(2)} ${allPoints[i].y.toFixed(2)}`;
+      }
+      d += " Z";
+      return d;
+    } else {
+      // With corner rounding
+      return buildRoundedPath(allPoints);
+    }
+  } else {
+    // Curved mode using quadratic Bézier curves
+    if (outerCornerRadius === 0) {
+      // Original behavior
+      let d = `M ${points[0].outer.x.toFixed(2)} ${points[0].outer.y.toFixed(2)}`;
+      for (let i = 0; i < numPoints; i++) {
+        const next = (i + 1) % numPoints;
+        d += ` Q ${points[i].inner.x.toFixed(2)} ${points[i].inner.y.toFixed(2)} ${points[next].outer.x.toFixed(2)} ${points[next].outer.y.toFixed(2)}`;
+      }
+      d += " Z";
+      return d;
+    } else {
+      // With corner rounding at outer points
+      const outerPoints = points.map(p => ({ ...p.outer, radius: outerCornerRadius }));
+      let d = "";
+
+      for (let i = 0; i < numPoints; i++) {
+        const next = (i + 1) % numPoints;
+        const curr = points[i];
+        const nextPt = points[next];
+
+        if (i === 0) {
+          // Start at first outer point
+          d = `M ${curr.outer.x.toFixed(2)} ${curr.outer.y.toFixed(2)}`;
+        }
+
+        // Curve through inner point to next outer point
+        d += ` Q ${curr.inner.x.toFixed(2)} ${curr.inner.y.toFixed(2)} ${nextPt.outer.x.toFixed(2)} ${nextPt.outer.y.toFixed(2)}`;
+      }
+      d += " Z";
+      return d;
+    }
+  }
+}
+
+// Helper function to build a path with rounded corners using SVG arcs
+function buildRoundedPath(points: Array<{ x: number; y: number; radius: number }>): string {
+  if (points.length < 3) return "";
+
+  let d = "";
+  const n = points.length;
+
+  // Calculate all corner points first
+  const corners: Array<{ start: { x: number; y: number }; corner: { x: number; y: number }; end: { x: number; y: number }; radius: number }> = [];
+
+  for (let i = 0; i < n; i++) {
+    const prev = points[(i - 1 + n) % n];
+    const curr = points[i];
+    const next = points[(i + 1) % n];
+
+    const radius = Math.min(
+      curr.radius,
+      distance(curr, prev) / 2,
+      distance(curr, next) / 2
+    );
+
+    if (radius > 0) {
+      // Calculate the points where the corner rounding starts and ends
+      const v1 = { x: prev.x - curr.x, y: prev.y - curr.y };
+      const v2 = { x: next.x - curr.x, y: next.y - curr.y };
+      const len1 = Math.sqrt(v1.x * v1.x + v1.y * v1.y);
+      const len2 = Math.sqrt(v2.x * v2.x + v2.y * v2.y);
+
+      const start = {
+        x: curr.x + (v1.x / len1) * radius,
+        y: curr.y + (v1.y / len1) * radius,
+      };
+      const end = {
+        x: curr.x + (v2.x / len2) * radius,
+        y: curr.y + (v2.y / len2) * radius,
+      };
+
+      corners.push({ start, corner: curr, end, radius });
+    } else {
+      corners.push({ start: curr, corner: curr, end: curr, radius: 0 });
+    }
+  }
+
+  // Build the path
+  d = `M ${corners[0].start.x.toFixed(2)} ${corners[0].start.y.toFixed(2)}`;
+
+  for (let i = 0; i < n; i++) {
+    const curr = corners[i];
+    const next = corners[(i + 1) % n];
+
+    if (curr.radius > 0) {
+      // Draw arc around the corner
+      d += ` A ${curr.radius.toFixed(2)} ${curr.radius.toFixed(2)} 0 0 1 ${curr.end.x.toFixed(2)} ${curr.end.y.toFixed(2)}`;
+    }
+
+    // Draw line to next corner's start point
+    d += ` L ${next.start.x.toFixed(2)} ${next.start.y.toFixed(2)}`;
+  }
+
+  d += " Z";
   return d;
+}
+
+function distance(p1: { x: number; y: number }, p2: { x: number; y: number }): number {
+  return Math.sqrt((p2.x - p1.x) ** 2 + (p2.y - p1.y) ** 2);
 }
 
 const SVG_SIZE = 400;
@@ -149,6 +277,9 @@ export default function SplashPage() {
     centerOffsetY: 0,
     seed: 12345, // Default seed for SSR
     color: "#FF6B6B",
+    useStraightLines: false,
+    innerCornerRadius: 0,
+    outerCornerRadius: 0,
   }));
 
   const [initialSeedSet, setInitialSeedSet] = useState(false);
@@ -166,11 +297,14 @@ export default function SplashPage() {
     }));
   }, []);
 
-  const updateConfig = useCallback((key: keyof SplashConfig, value: number | string) => {
+  const updateConfig = useCallback((key: keyof SplashConfig, value: number | string | boolean) => {
     setConfig((prev) => ({ ...prev, [key]: value }));
   }, []);
 
   const path = generateSplashPath(CENTER, CENTER, config);
+
+  // Generate a key to force re-render when shape changes significantly
+  const pathKey = `${config.numPoints}-${config.outerRadius}-${config.innerRadius}-${config.seed}-${config.useStraightLines}-${config.innerCornerRadius}-${config.outerCornerRadius}-${config.centerOffsetX}-${config.centerOffsetY}`;
 
   const svgCode = `<svg width="${SVG_SIZE}" height="${SVG_SIZE}" viewBox="0 0 ${SVG_SIZE} ${SVG_SIZE}" fill="none" xmlns="http://www.w3.org/2000/svg">
   <path d="${path}" fill="${config.color}"/>
@@ -203,9 +337,9 @@ export default function SplashPage() {
           className="w-full h-full max-w-[300px] max-h-[300px] p-4"
         >
           <path
+            key={pathKey}
             d={path}
             fill={config.color}
-            className="transition-all duration-150"
           />
         </svg>
       </div>
@@ -281,6 +415,62 @@ export default function SplashPage() {
                 step={1}
                 unit="px"
               />
+            </div>
+          </div>
+
+          <div className="pt-2 border-t">
+            <h3 className="font-medium text-sm mb-3 text-muted-foreground">Shape Mode</h3>
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <Label className="text-sm font-medium">Line Style</Label>
+                <ToggleGroup
+                  type="single"
+                  value={config.useStraightLines ? "straight" : "curved"}
+                  onValueChange={(value) => {
+                    if (value) updateConfig("useStraightLines", value === "straight");
+                  }}
+                  className="w-full justify-start"
+                  variant="outline"
+                  spacing={0}
+                >
+                  <ToggleGroupItem value="curved" className="flex-1">
+                    Curved
+                  </ToggleGroupItem>
+                  <ToggleGroupItem value="straight" className="flex-1">
+                    Straight
+                  </ToggleGroupItem>
+                </ToggleGroup>
+              </div>
+
+              {config.useStraightLines && (
+                <>
+                  <SliderControl
+                    label="Outer Corner Radius"
+                    value={config.outerCornerRadius}
+                    onChange={(v) => updateConfig("outerCornerRadius", v)}
+                    min={0}
+                    max={30}
+                    step={1}
+                    unit="px"
+                  />
+
+                  <SliderControl
+                    label="Inner Corner Radius"
+                    value={config.innerCornerRadius}
+                    onChange={(v) => updateConfig("innerCornerRadius", v)}
+                    min={0}
+                    max={30}
+                    step={1}
+                    unit="px"
+                  />
+                </>
+              )}
+
+              {!config.useStraightLines && config.outerCornerRadius === 0 && (
+                <p className="text-xs text-muted-foreground">
+                  Curved mode uses smooth Bézier curves between points
+                </p>
+              )}
             </div>
           </div>
 
