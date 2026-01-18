@@ -26,7 +26,7 @@ function getExtendedLine({
   }`;
 }
 
-export default function SplashPage() {
+export default function ArcPage() {
   const [largeArcFlag, setLargeArcFlag] = useState(false);
   const [sweepFlag, setSweepFlag] = useState(false);
   const [startX, setStartX] = useState(150);
