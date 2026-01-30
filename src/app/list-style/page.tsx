@@ -218,7 +218,7 @@ export default function ListStylePage() {
 
             <Button asChild>
               <a
-                href="https://github.com/levinsondk/share-sandbox/blob/main/src/app/list-style/"
+                href="https://github.com/levinsondk/sandbox/blob/main/src/app/list-style/"
                 target="_blank"
                 rel="noopener noreferrer"
               >

@@ -5,6 +5,14 @@ export interface PixelationUniforms {
   pixelSize: number;
   colorDepth: number;
   smoothing: number;
+  binaryMode: boolean;
+  blackThreshold: number;
+  whiteThreshold: number;
+  fillColor: [number, number, number]; // RGB 0-1
+  dualColorMode: boolean;
+  color1: [number, number, number]; // Dark pixels color (RGB 0-1)
+  color2: [number, number, number]; // Bright pixels color (RGB 0-1)
+  luminanceThreshold: number; // Threshold for color split (0-1)
 }
 
 export interface DitheringUniforms {
@@ -30,6 +38,10 @@ export interface GridUniforms {
   xOffset: number;
   yOffset: number;
   shapeType: number; // 0 = circle, 1 = square
+  dualColorMode: boolean;
+  color1: [number, number, number]; // Dark pixels color (RGB 0-1)
+  color2: [number, number, number]; // Bright pixels color (RGB 0-1)
+  luminanceThreshold: number; // Threshold for color split (0-1)
 }
 
 export type ShaderUniforms = PixelationUniforms | DitheringUniforms | ChromaticUniforms | GridUniforms;
@@ -117,11 +129,11 @@ export function useWebGL(
     const texture = gl.createTexture();
     gl.bindTexture(gl.TEXTURE_2D, texture);
     
-    // Set texture parameters
+    // Set texture parameters - use NEAREST to prevent color bleeding at transparent edges
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
     
     // Upload image
     gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, img);
@@ -186,6 +198,14 @@ export function useWebGL(
       gl.uniform1f(gl.getUniformLocation(program, 'u_pixelSize'), u.pixelSize);
       gl.uniform1f(gl.getUniformLocation(program, 'u_colorDepth'), u.colorDepth);
       gl.uniform1f(gl.getUniformLocation(program, 'u_smoothing'), u.smoothing);
+      gl.uniform1i(gl.getUniformLocation(program, 'u_binaryMode'), u.binaryMode ? 1 : 0);
+      gl.uniform1f(gl.getUniformLocation(program, 'u_blackThreshold'), u.blackThreshold);
+      gl.uniform1f(gl.getUniformLocation(program, 'u_whiteThreshold'), u.whiteThreshold);
+      gl.uniform3f(gl.getUniformLocation(program, 'u_fillColor'), u.fillColor[0], u.fillColor[1], u.fillColor[2]);
+      gl.uniform1i(gl.getUniformLocation(program, 'u_dualColorMode'), u.dualColorMode ? 1 : 0);
+      gl.uniform3f(gl.getUniformLocation(program, 'u_color1'), u.color1[0], u.color1[1], u.color1[2]);
+      gl.uniform3f(gl.getUniformLocation(program, 'u_color2'), u.color2[0], u.color2[1], u.color2[2]);
+      gl.uniform1f(gl.getUniformLocation(program, 'u_luminanceThreshold'), u.luminanceThreshold);
     } else if (effectType === 'dithering') {
       const u = uniforms as DitheringUniforms;
       gl.uniform1f(gl.getUniformLocation(program, 'u_threshold'), u.threshold);
@@ -209,6 +229,10 @@ export function useWebGL(
       gl.uniform1f(gl.getUniformLocation(program, 'u_xOffset'), u.xOffset);
       gl.uniform1f(gl.getUniformLocation(program, 'u_yOffset'), u.yOffset);
       gl.uniform1i(gl.getUniformLocation(program, 'u_shapeType'), u.shapeType);
+      gl.uniform1i(gl.getUniformLocation(program, 'u_dualColorMode'), u.dualColorMode ? 1 : 0);
+      gl.uniform3f(gl.getUniformLocation(program, 'u_color1'), u.color1[0], u.color1[1], u.color1[2]);
+      gl.uniform3f(gl.getUniformLocation(program, 'u_color2'), u.color2[0], u.color2[1], u.color2[2]);
+      gl.uniform1f(gl.getUniformLocation(program, 'u_luminanceThreshold'), u.luminanceThreshold);
     }
   }, []);
 
@@ -223,7 +247,11 @@ export function useWebGL(
     timeRef.current = performance.now() / 1000;
     
     gl.viewport(0, 0, canvas.width, canvas.height);
+    gl.clearColor(0, 0, 0, 0);
     gl.clear(gl.COLOR_BUFFER_BIT);
+    
+    // Disable blending - the shader handles alpha properly
+    gl.disable(gl.BLEND);
     
     gl.useProgram(program);
     gl.activeTexture(gl.TEXTURE0);

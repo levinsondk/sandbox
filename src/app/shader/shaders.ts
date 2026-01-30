@@ -19,6 +19,14 @@ export const pixelationFragmentShader = `
   uniform float u_pixelSize;
   uniform float u_colorDepth;
   uniform float u_smoothing;
+  uniform bool u_binaryMode;
+  uniform float u_blackThreshold;
+  uniform float u_whiteThreshold;
+  uniform vec3 u_fillColor;
+  uniform bool u_dualColorMode;
+  uniform vec3 u_color1;
+  uniform vec3 u_color2;
+  uniform float u_luminanceThreshold;
   
   varying vec2 v_texCoord;
   
@@ -31,6 +39,30 @@ export const pixelationFragmentShader = `
     // Sample both original and pixelated
     vec4 originalColor = texture2D(u_image, uv);
     vec4 pixelatedColor = texture2D(u_image, pixelatedUV);
+    
+    // Discard nearly transparent pixels to prevent alpha bleeding artifacts
+    // This eliminates horizontal stripes from semi-transparent edge pixels
+    if (pixelatedColor.a < 0.01) {
+      gl_FragColor = vec4(0.0, 0.0, 0.0, 0.0);
+      return;
+    }
+    
+    // Dual color mode: map pixels to one of two colors based on luminance
+    if (u_dualColorMode) {
+      float gray = dot(pixelatedColor.rgb, vec3(0.299, 0.587, 0.114));
+      vec3 outputColor = gray < u_luminanceThreshold ? u_color1 : u_color2;
+      gl_FragColor = vec4(outputColor, pixelatedColor.a);
+      return;
+    }
+    
+    // Binary mode: output fill color or transparent based on luminance thresholds
+    if (u_binaryMode) {
+      float gray = dot(pixelatedColor.rgb, vec3(0.299, 0.587, 0.114));
+      // Pixel is filled if luminance is >= blackThreshold AND <= whiteThreshold
+      float alpha = step(u_blackThreshold, gray) * step(gray, u_whiteThreshold);
+      gl_FragColor = vec4(u_fillColor, alpha);
+      return;
+    }
     
     // Reduce color depth
     float levels = u_colorDepth;
@@ -175,6 +207,7 @@ export const chromaticAberrationFragmentShader = `
     float r = texture2D(u_image, uv + offset).r;
     float g = texture2D(u_image, uv).g;
     float b = texture2D(u_image, uv - offset).b;
+    float a = texture2D(u_image, uv).a;  // Sample alpha from center
     
     vec3 color = vec3(r, g, b);
     
@@ -191,7 +224,7 @@ export const chromaticAberrationFragmentShader = `
       color += noise * u_noiseAmount;
     }
     
-    gl_FragColor = vec4(color, 1.0);
+    gl_FragColor = vec4(color, a);
   }
 `;
 
@@ -208,6 +241,10 @@ export const gridFragmentShader = `
   uniform float u_xOffset;
   uniform float u_yOffset;
   uniform int u_shapeType; // 0 = circle, 1 = square
+  uniform bool u_dualColorMode;
+  uniform vec3 u_color1;
+  uniform vec3 u_color2;
+  uniform float u_luminanceThreshold;
   
   varying vec2 v_texCoord;
   
@@ -250,6 +287,13 @@ export const gridFragmentShader = `
     // Sample image color at cell center
     vec4 cellColor = texture2D(u_image, sampleUV);
     
+    // Determine shape color (original or dual color mode)
+    vec3 shapeColor = cellColor.rgb;
+    if (u_dualColorMode) {
+      float gray = dot(cellColor.rgb, vec3(0.299, 0.587, 0.114));
+      shapeColor = gray < u_luminanceThreshold ? u_color1 : u_color2;
+    }
+    
     // Calculate shape radius based on spread
     // spread of 0 = shapes fill the cell, spread of 1 = tiny shapes
     float xRadius = 0.5 * (1.0 - u_xSpread * 0.9);
@@ -272,8 +316,8 @@ export const gridFragmentShader = `
     
     // Output: shape color or transparent background
     vec3 bgColor = vec3(0.0);
-    vec3 finalColor = mix(bgColor, cellColor.rgb, inside);
-    float finalAlpha = inside;
+    vec3 finalColor = mix(bgColor, shapeColor, inside);
+    float finalAlpha = inside * cellColor.a;  // Combine shape mask with original alpha
     
     gl_FragColor = vec4(finalColor, finalAlpha);
   }

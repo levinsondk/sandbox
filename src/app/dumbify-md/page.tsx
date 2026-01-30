@@ -32,7 +32,7 @@ export default function DumbifyMdPage() {
 
           <Button asChild>
             <a
-              href="https://github.com/levinsondk/share-sandbox/blob/main/src/app/dumbify-md/"
+              href="https://github.com/levinsondk/sandbox/blob/main/src/app/dumbify-md/"
               target="_blank"
               rel="noopener noreferrer"
             >

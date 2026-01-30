@@ -437,7 +437,31 @@ ${propsDefaults}
     img.src = src;
   }, [src]);
 
-  // Setup WebGL
+  // Render function - defined first so it can be called from setup effect
+  const render = useCallback(() => {
+    if (!glRef.current || !canvasRef.current) return;
+    const { gl, program, texture } = glRef.current;
+    const canvas = canvasRef.current;
+
+    gl.viewport(0, 0, canvas.width, canvas.height);
+    gl.clear(gl.COLOR_BUFFER_BIT);
+    gl.useProgram(program);
+    gl.activeTexture(gl.TEXTURE0);
+    gl.bindTexture(gl.TEXTURE_2D, texture);
+
+    gl.uniform2f(gl.getUniformLocation(program, "u_resolution"), canvas.width, canvas.height);
+    gl.uniform1i(gl.getUniformLocation(program, "u_image"), 0);
+    ${propsUsage}
+
+    gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+${needsAnimation ? `
+    // Continue animation for noise effect
+    if (noiseAmount > 0) {
+      animationRef.current = requestAnimationFrame(render);
+    }` : ''}
+  }, [${getPropsListForDeps(effect)}]);
+
+  // Setup WebGL and render immediately when ready
   useEffect(() => {
     if (!image || !canvasRef.current) return;
 
@@ -486,37 +510,18 @@ ${propsDefaults}
 
     glRef.current = { gl, program, texture: texture! };
 
+    // Render immediately after setup - don't rely on separate effect
+    // (setting a ref doesn't trigger re-render, so we must render inline)
+    render();
+
     return () => {
       if (animationRef.current) cancelAnimationFrame(animationRef.current);
       gl.deleteTexture(texture);
       gl.deleteProgram(program);
     };
-  }, [image, width, height]);
+  }, [image, width, height, render]);
 
-  // Render
-  const render = useCallback(() => {
-    if (!glRef.current || !canvasRef.current) return;
-    const { gl, program, texture } = glRef.current;
-    const canvas = canvasRef.current;
-
-    gl.viewport(0, 0, canvas.width, canvas.height);
-    gl.clear(gl.COLOR_BUFFER_BIT);
-    gl.useProgram(program);
-    gl.activeTexture(gl.TEXTURE0);
-    gl.bindTexture(gl.TEXTURE_2D, texture);
-
-    gl.uniform2f(gl.getUniformLocation(program, "u_resolution"), canvas.width, canvas.height);
-    gl.uniform1i(gl.getUniformLocation(program, "u_image"), 0);
-    ${propsUsage}
-
-    gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
-${needsAnimation ? `
-    // Continue animation for noise effect
-    if (noiseAmount > 0) {
-      animationRef.current = requestAnimationFrame(render);
-    }` : ''}
-  }, [${getPropsListForDeps(effect)}]);
-
+  // Re-render when uniforms change (props update after initial mount)
   useEffect(() => {
     if (glRef.current) {
       if (animationRef.current) cancelAnimationFrame(animationRef.current);
