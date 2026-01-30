@@ -2,6 +2,11 @@ import Link from "next/link";
 
 const pages = [
   {
+    path: "/shader",
+    title: "Shader Playground",
+    description: "Apply WebGL shader effects to images",
+  },
+  {
     path: "/splash",
     title: "Splash Generator",
     description: "Create parametric splash-like star shapes",

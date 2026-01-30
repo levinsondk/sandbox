@@ -1,4 +1,4 @@
-import { RubberBanding } from "../dd/source";
+import { RubberBanding } from "../source";
 
 export default function RubberBandingPage() {
   return (
