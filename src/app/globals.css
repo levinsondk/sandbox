@@ -1,6 +1,4 @@
 @import "tailwindcss";
-@import "./dd/system.css";
-
 @custom-variant dark (&:is(.dark *));
 
 @theme inline {
