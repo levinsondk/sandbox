@@ -44,7 +44,22 @@ export interface GridUniforms {
   luminanceThreshold: number; // Threshold for color split (0-1)
 }
 
-export type ShaderUniforms = PixelationUniforms | DitheringUniforms | ChromaticUniforms | GridUniforms;
+export interface HolographicUniforms {
+  intensity: number;
+  diffractionScale: number;
+  angle: number;
+  shimmerSpeed: number;
+  sparkle: number;
+  highlight: number;
+  chromaShift: number;
+}
+
+export type ShaderUniforms =
+  | PixelationUniforms
+  | DitheringUniforms
+  | ChromaticUniforms
+  | GridUniforms
+  | HolographicUniforms;
 
 interface WebGLState {
   gl: WebGLRenderingContext | null;
@@ -233,6 +248,16 @@ export function useWebGL(
       gl.uniform3f(gl.getUniformLocation(program, 'u_color1'), u.color1[0], u.color1[1], u.color1[2]);
       gl.uniform3f(gl.getUniformLocation(program, 'u_color2'), u.color2[0], u.color2[1], u.color2[2]);
       gl.uniform1f(gl.getUniformLocation(program, 'u_luminanceThreshold'), u.luminanceThreshold);
+    } else if (effectType === 'holographic') {
+      const u = uniforms as HolographicUniforms;
+      gl.uniform1f(gl.getUniformLocation(program, 'u_intensity'), u.intensity);
+      gl.uniform1f(gl.getUniformLocation(program, 'u_diffractionScale'), u.diffractionScale);
+      gl.uniform1f(gl.getUniformLocation(program, 'u_angle'), u.angle);
+      gl.uniform1f(gl.getUniformLocation(program, 'u_shimmerSpeed'), u.shimmerSpeed);
+      gl.uniform1f(gl.getUniformLocation(program, 'u_sparkle'), u.sparkle);
+      gl.uniform1f(gl.getUniformLocation(program, 'u_highlight'), u.highlight);
+      gl.uniform1f(gl.getUniformLocation(program, 'u_chromaShift'), u.chromaShift);
+      gl.uniform1f(gl.getUniformLocation(program, 'u_time'), timeRef.current);
     }
   }, []);
 
@@ -262,7 +287,12 @@ export function useWebGL(
     gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
     
     // Continue animation for effects that need it (chromatic with noise)
-    if (effect === 'chromatic' && (uniforms as ChromaticUniforms).noiseAmount > 0) {
+    if (
+      (effect === 'chromatic' && (uniforms as ChromaticUniforms).noiseAmount > 0) ||
+      (effect === 'holographic' &&
+        ((uniforms as HolographicUniforms).shimmerSpeed > 0 ||
+          (uniforms as HolographicUniforms).sparkle > 0))
+    ) {
       animationFrameRef.current = requestAnimationFrame(render);
     }
   }, [canvasRef, image, effect, uniforms, setUniforms]);

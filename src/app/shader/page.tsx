@@ -16,6 +16,7 @@ import {
   DitheringUniforms,
   ChromaticUniforms,
   GridUniforms,
+  HolographicUniforms,
 } from "./use-webgl";
 import { ShaderEffect } from "./shaders";
 import { downloadShaderZip } from "./export-shader";
@@ -176,6 +177,16 @@ const defaultGridUniforms: GridUniforms = {
   luminanceThreshold: 0.5,
 };
 
+const defaultHolographicUniforms: HolographicUniforms = {
+  intensity: 0.7,
+  diffractionScale: 18,
+  angle: 35,
+  shimmerSpeed: 0.4,
+  sparkle: 0.2,
+  highlight: 0.6,
+  chromaShift: 0.15,
+};
+
 export default function ShaderPage() {
   const isClient = useIsClient();
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -195,6 +206,9 @@ export default function ShaderPage() {
     defaultChromaticUniforms
   );
   const [gridUniforms, setGridUniforms] = useState(defaultGridUniforms);
+  const [holographicUniforms, setHolographicUniforms] = useState(
+    defaultHolographicUniforms
+  );
 
   const currentUniforms =
     effect === "pixelation"
@@ -203,7 +217,9 @@ export default function ShaderPage() {
       ? ditheringUniforms
       : effect === "chromatic"
       ? chromaticUniforms
-      : gridUniforms;
+      : effect === "grid"
+      ? gridUniforms
+      : holographicUniforms;
 
   const { isReady, downloadImage } = useWebGL(
     canvasRef,
@@ -245,8 +261,10 @@ export default function ShaderPage() {
       setDitheringUniforms(defaultDitheringUniforms);
     } else if (effect === "chromatic") {
       setChromaticUniforms(defaultChromaticUniforms);
-    } else {
+    } else if (effect === "grid") {
       setGridUniforms(defaultGridUniforms);
+    } else {
+      setHolographicUniforms(defaultHolographicUniforms);
     }
   }, [effect]);
 
@@ -353,6 +371,9 @@ export default function ShaderPage() {
           </ToggleGroupItem>
           <ToggleGroupItem value="grid" className="flex-1">
             Grid
+          </ToggleGroupItem>
+          <ToggleGroupItem value="holographic" className="flex-1">
+            Holographic
           </ToggleGroupItem>
         </ToggleGroup>
       </div>
@@ -1214,6 +1235,169 @@ export default function ShaderPage() {
                     stylized halftone or mosaic effect.
                   </p>
                 )}
+              </div>
+            </>
+          )}
+
+          {image && effect === "holographic" && (
+            <>
+              <SliderControl
+                label="Iridescence"
+                value={holographicUniforms.intensity}
+                onChange={(v) =>
+                  setHolographicUniforms((prev) => ({ ...prev, intensity: v }))
+                }
+                min={0}
+                max={1}
+                step={0.01}
+                tooltip={{
+                  description:
+                    "Controls how strongly the rainbow foil blends with the base image.",
+                  technical:
+                    "Mixes between the original color and a diffraction-based spectrum.",
+                }}
+              />
+              <SliderControl
+                label="Diffraction Spacing"
+                value={holographicUniforms.diffractionScale}
+                onChange={(v) =>
+                  setHolographicUniforms((prev) => ({
+                    ...prev,
+                    diffractionScale: v,
+                  }))
+                }
+                min={4}
+                max={60}
+                step={1}
+                unit="px"
+                tooltip={{
+                  description:
+                    "Controls how tight the holographic rainbow bands are — lower values create finer patterns.",
+                  technical:
+                    "Sets the effective line spacing of a diffraction grating in pixel units.",
+                }}
+              />
+              <SliderControl
+                label="Grating Angle"
+                value={holographicUniforms.angle}
+                onChange={(v) =>
+                  setHolographicUniforms((prev) => ({ ...prev, angle: v }))
+                }
+                min={0}
+                max={360}
+                step={1}
+                unit="°"
+                tooltip={{
+                  description:
+                    "Rotates the holographic grooves — changes how the rainbow sweeps across the sticker.",
+                  technical:
+                    "Rotates the direction vector used to sample the diffraction phase.",
+                }}
+              />
+
+              <div className="pt-2 border-t">
+                <h3 className="font-medium text-sm mb-4 text-muted-foreground">
+                  Motion & Sparkle
+                </h3>
+                <div className="space-y-4">
+                  <SliderControl
+                    label="Shimmer Speed"
+                    value={holographicUniforms.shimmerSpeed}
+                    onChange={(v) =>
+                      setHolographicUniforms((prev) => ({
+                        ...prev,
+                        shimmerSpeed: v,
+                      }))
+                    }
+                    min={0}
+                    max={2}
+                    step={0.01}
+                    tooltip={{
+                      description:
+                        "Animates the rainbow shift to simulate tilting the sticker in light.",
+                      technical:
+                        "Adds time-based phase shift to the diffraction pattern.",
+                    }}
+                  />
+                  <SliderControl
+                    label="Sparkle"
+                    value={holographicUniforms.sparkle}
+                    onChange={(v) =>
+                      setHolographicUniforms((prev) => ({
+                        ...prev,
+                        sparkle: v,
+                      }))
+                    }
+                    min={0}
+                    max={1}
+                    step={0.01}
+                    tooltip={{
+                      description:
+                        "Adds glitter-like micro highlights for foil flakes.",
+                      technical:
+                        "Uses randomized threshold noise to boost spectral highlights.",
+                    }}
+                  />
+                </div>
+              </div>
+
+              <div className="pt-2 border-t">
+                <h3 className="font-medium text-sm mb-4 text-muted-foreground">
+                  Foil Response
+                </h3>
+                <div className="space-y-4">
+                  <SliderControl
+                    label="Highlight Boost"
+                    value={holographicUniforms.highlight}
+                    onChange={(v) =>
+                      setHolographicUniforms((prev) => ({
+                        ...prev,
+                        highlight: v,
+                      }))
+                    }
+                    min={0}
+                    max={1}
+                    step={0.01}
+                    tooltip={{
+                      description:
+                        "Brightens the most reflective areas of the foil.",
+                      technical:
+                        "Scales the highlight term derived from luminance and view falloff.",
+                    }}
+                  />
+                  <SliderControl
+                    label="Chroma Shift"
+                    value={holographicUniforms.chromaShift}
+                    onChange={(v) =>
+                      setHolographicUniforms((prev) => ({
+                        ...prev,
+                        chromaShift: v,
+                      }))
+                    }
+                    min={0}
+                    max={1}
+                    step={0.01}
+                    tooltip={{
+                      description:
+                        "Offsets the rainbow phase to tint the foil differently.",
+                      technical:
+                        "Adds a phase shift to the spectral sine waves.",
+                    }}
+                  />
+                </div>
+              </div>
+
+              <div className="bg-muted/50 rounded-xl p-4 text-sm text-muted-foreground space-y-2">
+                <p>
+                  Holographic stickers use micro-embossed diffraction gratings.
+                  Those tiny grooves act like a prism, splitting white light
+                  into angle-dependent colors through interference.
+                </p>
+                <p>
+                  As you tilt the foil, the grating spacing and viewing angle
+                  shift which wavelengths constructively interfere — that is
+                  why the rainbow bands slide across the surface.
+                </p>
               </div>
             </>
           )}

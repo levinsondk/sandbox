@@ -5,6 +5,7 @@ import {
   DitheringUniforms,
   ChromaticUniforms,
   GridUniforms,
+  HolographicUniforms,
   ShaderUniforms,
 } from './use-webgl';
 
@@ -40,6 +41,11 @@ const shaderDescriptions: Record<ShaderEffect, { name: string; description: stri
     name: 'Grid',
     description: 'Breaks down the image into a grid of colored shapes (dots or squares) for a stylized halftone or mosaic effect.',
     technical: 'Divides the image into cells, samples the color at each cell center, and renders shapes (circles or squares) with that color. Supports rotation and offset transformations.',
+  },
+  holographic: {
+    name: 'Holographic',
+    description: 'Simulates holographic sticker foil with iridescent diffraction bands, shimmer, and micro-sparkle highlights.',
+    technical: 'Uses a directional diffraction phase to generate a sine-based spectrum. The effect blends spectral colors with the base image, adds view-weighted highlights, and optional sparkle noise for foil flakes.',
   },
 };
 
@@ -249,6 +255,57 @@ const fragmentShaders: Record<ShaderEffect, string> = {
     gl_FragColor = vec4(finalColor, finalAlpha);
   }
 `,
+  holographic: `
+  precision mediump float;
+  
+  uniform sampler2D u_image;
+  uniform vec2 u_resolution;
+  uniform float u_intensity;
+  uniform float u_diffractionScale;
+  uniform float u_angle;
+  uniform float u_shimmerSpeed;
+  uniform float u_sparkle;
+  uniform float u_highlight;
+  uniform float u_chromaShift;
+  uniform float u_time;
+  
+  varying vec2 v_texCoord;
+  
+  float random(vec2 st) {
+    return fract(sin(dot(st.xy, vec2(12.9898, 78.233))) * 43758.5453123);
+  }
+  
+  vec3 spectrum(float phase) {
+    return vec3(
+      sin(phase),
+      sin(phase + 2.094),
+      sin(phase + 4.188)
+    ) * 0.5 + 0.5;
+  }
+  
+  void main() {
+    vec2 uv = v_texCoord;
+    vec4 base = texture2D(u_image, uv);
+    if (base.a < 0.01) {
+      gl_FragColor = vec4(0.0);
+      return;
+    }
+    float luminance = dot(base.rgb, vec3(0.299, 0.587, 0.114));
+    float rad = u_angle * 3.14159265 / 180.0;
+    vec2 direction = vec2(cos(rad), sin(rad));
+    float scale = max(u_diffractionScale, 1.0);
+    float phase = dot(uv * u_resolution, direction) / scale;
+    phase += u_time * u_shimmerSpeed;
+    vec3 spectral = spectrum(phase + u_chromaShift * 6.28318);
+    float viewFalloff = 1.0 - smoothstep(0.0, 0.85, length(uv - 0.5));
+    float highlight = smoothstep(0.35, 0.95, luminance + viewFalloff * 0.35 + sin(phase) * 0.2);
+    vec3 holoColor = mix(base.rgb, spectral, u_intensity);
+    holoColor += spectral * highlight * u_highlight;
+    float sparkleMask = step(1.0 - u_sparkle, random(floor(uv * u_resolution) + floor(u_time * 12.0)));
+    holoColor += sparkleMask * spectral * 0.6;
+    gl_FragColor = vec4(holoColor, base.a);
+  }
+`,
 };
 
 // Generate props interface and defaults for each shader
@@ -351,6 +408,40 @@ function generatePropsSection(effect: ShaderEffect, uniforms: ShaderUniforms): {
     gl.uniform1i(gl.getUniformLocation(program, 'u_shapeType'), shapeType);`,
       };
     }
+    case 'holographic': {
+      const u = uniforms as HolographicUniforms;
+      return {
+        propsInterface: `  /** Iridescent blend strength (0-1). */
+  intensity?: number;
+  /** Diffraction grating spacing in pixels. */
+  diffractionScale?: number;
+  /** Grating rotation angle in degrees. */
+  angle?: number;
+  /** Speed of shimmer animation. */
+  shimmerSpeed?: number;
+  /** Sparkle intensity (0-1). */
+  sparkle?: number;
+  /** Highlight boost for reflective peaks. */
+  highlight?: number;
+  /** Phase shift for spectral tinting. */
+  chromaShift?: number;`,
+        propsDefaults: `  intensity = ${u.intensity},
+  diffractionScale = ${u.diffractionScale},
+  angle = ${u.angle},
+  shimmerSpeed = ${u.shimmerSpeed},
+  sparkle = ${u.sparkle},
+  highlight = ${u.highlight},
+  chromaShift = ${u.chromaShift},`,
+        propsUsage: `gl.uniform1f(gl.getUniformLocation(program, 'u_intensity'), intensity);
+    gl.uniform1f(gl.getUniformLocation(program, 'u_diffractionScale'), diffractionScale);
+    gl.uniform1f(gl.getUniformLocation(program, 'u_angle'), angle);
+    gl.uniform1f(gl.getUniformLocation(program, 'u_shimmerSpeed'), shimmerSpeed);
+    gl.uniform1f(gl.getUniformLocation(program, 'u_sparkle'), sparkle);
+    gl.uniform1f(gl.getUniformLocation(program, 'u_highlight'), highlight);
+    gl.uniform1f(gl.getUniformLocation(program, 'u_chromaShift'), chromaShift);
+    gl.uniform1f(gl.getUniformLocation(program, 'u_time'), performance.now() / 1000);`,
+      };
+    }
   }
 }
 
@@ -359,8 +450,7 @@ function generateComponentCode(effect: ShaderEffect, uniforms: ShaderUniforms): 
   const { name } = shaderDescriptions[effect];
   const { propsInterface, propsDefaults, propsUsage } = generatePropsSection(effect, uniforms);
   const fragmentShader = fragmentShaders[effect];
-  
-  const needsAnimation = effect === 'chromatic';
+  const animationSnippet = getAnimationSnippet(effect);
 
   return `"use client";
 
@@ -454,11 +544,7 @@ ${propsDefaults}
     ${propsUsage}
 
     gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
-${needsAnimation ? `
-    // Continue animation for noise effect
-    if (noiseAmount > 0) {
-      animationRef.current = requestAnimationFrame(render);
-    }` : ''}
+${animationSnippet}
   }, [${getPropsListForDeps(effect)}]);
 
   // Setup WebGL and render immediately when ready
@@ -546,6 +632,25 @@ export default ${name}Shader;
 `;
 }
 
+function getAnimationSnippet(effect: ShaderEffect): string {
+  switch (effect) {
+    case 'chromatic':
+      return `
+    // Continue animation for noise effect
+    if (noiseAmount > 0) {
+      animationRef.current = requestAnimationFrame(render);
+    }`;
+    case 'holographic':
+      return `
+    // Continue animation for holographic shimmer
+    if (shimmerSpeed > 0 || sparkle > 0) {
+      animationRef.current = requestAnimationFrame(render);
+    }`;
+    default:
+      return '';
+  }
+}
+
 function getPropsListForDeps(effect: ShaderEffect): string {
   switch (effect) {
     case 'pixelation':
@@ -556,6 +661,8 @@ function getPropsListForDeps(effect: ShaderEffect): string {
       return 'offsetAmount, angle, scanlines, scanlineIntensity, noiseAmount';
     case 'grid':
       return 'cellSize, xSpread, ySpread, rotation, xOffset, yOffset, shapeType';
+    case 'holographic':
+      return 'intensity, diffractionScale, angle, shimmerSpeed, sparkle, highlight, chromaShift';
   }
 }
 
@@ -677,6 +784,16 @@ function generatePropsTable(effect: ShaderEffect, uniforms: ShaderUniforms): str
 | \`yOffset\` | \`number\` | \`${u.yOffset}\` | Vertical offset (-1 to 1) |
 | \`shapeType\` | \`0\\|1\` | \`${u.shapeType}\` | 0=Circle/Dot, 1=Square |`;
     }
+    case 'holographic': {
+      const u = uniforms as HolographicUniforms;
+      return `| \`intensity\` | \`number\` | \`${u.intensity}\` | Iridescent blend strength |
+| \`diffractionScale\` | \`number\` | \`${u.diffractionScale}\` | Grating spacing in pixels |
+| \`angle\` | \`number\` | \`${u.angle}\` | Grating rotation in degrees |
+| \`shimmerSpeed\` | \`number\` | \`${u.shimmerSpeed}\` | Shimmer animation speed |
+| \`sparkle\` | \`number\` | \`${u.sparkle}\` | Sparkle intensity |
+| \`highlight\` | \`number\` | \`${u.highlight}\` | Highlight boost |
+| \`chromaShift\` | \`number\` | \`${u.chromaShift}\` | Spectral phase shift |`;
+    }
   }
 }
 
@@ -712,6 +829,16 @@ function generateUsageProps(effect: ShaderEffect, uniforms: ShaderUniforms): str
       xOffset={${u.xOffset}}
       yOffset={${u.yOffset}}
       shapeType={${u.shapeType}}`;
+    }
+    case 'holographic': {
+      const u = uniforms as HolographicUniforms;
+      return `      intensity={${u.intensity}}
+      diffractionScale={${u.diffractionScale}}
+      angle={${u.angle}}
+      shimmerSpeed={${u.shimmerSpeed}}
+      sparkle={${u.sparkle}}
+      highlight={${u.highlight}}
+      chromaShift={${u.chromaShift}}`;
     }
   }
 }
@@ -752,6 +879,16 @@ function generateCustomizationTips(effect: ShaderEffect): string {
 ### LED Display
 - Use \`shapeType: 0\` (dots) with high spread (0.5-0.7)
 - Keep \`cellSize\` small (4-8) for dense dot matrix`;
+    case 'holographic':
+      return `### Sticker Foil Look
+- Set \`intensity: 0.6-0.9\` for strong iridescence
+- Use \`diffractionScale: 12-24\` for distinct rainbow bands
+- Add \`sparkle: 0.2-0.4\` for foil flake shimmer
+
+### Subtle Sheen
+- Keep \`intensity: 0.2-0.4\`
+- Lower \`highlight: 0.2-0.4\` to avoid overpowering the base image
+- Set \`shimmerSpeed: 0\` for a static print feel`;
   }
 }
 
