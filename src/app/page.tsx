@@ -12,21 +12,6 @@ const pages = [
     description: "Create parametric splash-like star shapes",
   },
   {
-    path: "/randomized-svg",
-    title: "Randomized SVG Shapes",
-    description: "Randomly generated SVG shapes with constrained vertices",
-  },
-  {
-    path: "/arc",
-    title: "SVG Arc Visualizer",
-    description: "Interactive SVG arc path tool",
-  },
-  {
-    path: "/drag-motion",
-    title: "Drag Motion",
-    description: "Interactive drag demo with Framer Motion",
-  },
-  {
     path: "/list-style",
     title: "List Styles",
     description: "List styling and typography examples",
@@ -35,11 +20,6 @@ const pages = [
     path: "/dumbify-md",
     title: "Markdown Display",
     description: "Markdown and code block styling",
-  },
-  {
-    path: "/hello",
-    title: "Hello World",
-    description: "A simple test page",
   },
 ];
 
