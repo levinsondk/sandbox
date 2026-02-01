@@ -2,16 +2,7 @@
 
 > Keep this file under 100 lines. Update when making significant changes.
 
-## Runtime
-
-This project uses **bun** as the runtime.
-
-## Commands
-
-```bash
-bun run dev    # Start development server
-bun run build  # Production build
-```
+- bun runtime
 
 ## Architecture
 
