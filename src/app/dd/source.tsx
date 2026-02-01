@@ -2,7 +2,7 @@
 
 import { animate, motion, useMotionValue, useSpring } from "motion/react";
 import React from "react";
-import { Gesture } from "components/gesture";
+import { Gesture } from "@/components/gesture";
 
 const RECTANGLE_HEIGHT = 200;
 const DEVICE_HEIGHT = 480;
