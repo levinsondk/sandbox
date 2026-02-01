@@ -323,12 +323,74 @@ export const gridFragmentShader = `
   }
 `;
 
+// Holographic foil fragment shader
+export const holographicFragmentShader = `
+  precision mediump float;
+  
+  uniform sampler2D u_image;
+  uniform vec2 u_resolution;
+  uniform float u_intensity;
+  uniform float u_diffractionScale;
+  uniform float u_angle;
+  uniform float u_shimmerSpeed;
+  uniform float u_sparkle;
+  uniform float u_highlight;
+  uniform float u_chromaShift;
+  uniform float u_time;
+  
+  varying vec2 v_texCoord;
+  
+  float random(vec2 st) {
+    return fract(sin(dot(st.xy, vec2(12.9898, 78.233))) * 43758.5453123);
+  }
+  
+  vec3 spectrum(float phase) {
+    return vec3(
+      sin(phase),
+      sin(phase + 2.094),
+      sin(phase + 4.188)
+    ) * 0.5 + 0.5;
+  }
+  
+  void main() {
+    vec2 uv = v_texCoord;
+    vec4 base = texture2D(u_image, uv);
+    
+    if (base.a < 0.01) {
+      gl_FragColor = vec4(0.0);
+      return;
+    }
+    
+    float luminance = dot(base.rgb, vec3(0.299, 0.587, 0.114));
+    
+    float rad = u_angle * 3.14159265 / 180.0;
+    vec2 direction = vec2(cos(rad), sin(rad));
+    
+    float scale = max(u_diffractionScale, 1.0);
+    float phase = dot(uv * u_resolution, direction) / scale;
+    phase += u_time * u_shimmerSpeed;
+    
+    vec3 spectral = spectrum(phase + u_chromaShift * 6.28318);
+    float viewFalloff = 1.0 - smoothstep(0.0, 0.85, length(uv - 0.5));
+    float highlight = smoothstep(0.35, 0.95, luminance + viewFalloff * 0.35 + sin(phase) * 0.2);
+    
+    vec3 holoColor = mix(base.rgb, spectral, u_intensity);
+    holoColor += spectral * highlight * u_highlight;
+    
+    float sparkleMask = step(1.0 - u_sparkle, random(floor(uv * u_resolution) + floor(u_time * 12.0)));
+    holoColor += sparkleMask * spectral * 0.6;
+    
+    gl_FragColor = vec4(holoColor, base.a);
+  }
+`;
+
 // Shader effect types
-export type ShaderEffect = 'pixelation' | 'dithering' | 'chromatic' | 'grid';
+export type ShaderEffect = 'pixelation' | 'dithering' | 'chromatic' | 'grid' | 'holographic';
 
 export const shaderPrograms: Record<ShaderEffect, string> = {
   pixelation: pixelationFragmentShader,
   dithering: ditheringFragmentShader,
   chromatic: chromaticAberrationFragmentShader,
   grid: gridFragmentShader,
+  holographic: holographicFragmentShader,
 };
