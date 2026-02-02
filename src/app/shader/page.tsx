@@ -331,48 +331,73 @@ export default function ShaderPage() {
           className="hidden"
         />
         {image && (
-          <button
-            onClick={() => setBlackBackground(!blackBackground)}
-            className={`absolute bottom-3 left-1/2 -translate-x-1/2 p-2 rounded-lg border transition-colors ${
-              blackBackground
-                ? "bg-neutral-800/80 hover:bg-neutral-800 border-neutral-700 text-neutral-400 hover:text-neutral-200"
-                : "bg-background/80 hover:bg-background border-border text-muted-foreground hover:text-foreground"
-            }`}
-            title={blackBackground ? "Light background" : "Dark background"}
-          >
-            <svg className="w-4 h-4" viewBox="0 0 24 24">
-              <circle cx="12" cy="12" r="10" fill="none" stroke="currentColor" strokeWidth="2" />
-              <path d="M12 2a10 10 0 0 1 0 20V2z" fill="currentColor" />
-            </svg>
-          </button>
+          <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex gap-2">
+            <button
+              onClick={() => fileInputRef.current?.click()}
+              className={`p-2 rounded-lg border transition-colors ${
+                blackBackground
+                  ? "bg-neutral-800/80 hover:bg-neutral-800 border-neutral-700 text-neutral-400 hover:text-neutral-200"
+                  : "bg-background/80 hover:bg-background border-border text-muted-foreground hover:text-foreground"
+              }`}
+              title="Upload new image"
+            >
+              <svg
+                className="w-4 h-4"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"
+                />
+              </svg>
+            </button>
+            <button
+              onClick={() => setBlackBackground(!blackBackground)}
+              className={`p-2 rounded-lg border transition-colors ${
+                blackBackground
+                  ? "bg-neutral-800/80 hover:bg-neutral-800 border-neutral-700 text-neutral-400 hover:text-neutral-200"
+                  : "bg-background/80 hover:bg-background border-border text-muted-foreground hover:text-foreground"
+              }`}
+              title={blackBackground ? "Light background" : "Dark background"}
+            >
+              <svg className="w-4 h-4" viewBox="0 0 24 24">
+                <circle cx="12" cy="12" r="10" fill="none" stroke="currentColor" strokeWidth="2" />
+                <path d="M12 2a10 10 0 0 1 0 20V2z" fill="currentColor" />
+              </svg>
+            </button>
+          </div>
         )}
       </div>
 
       {/* Tab Bar */}
-      <div className="border-b bg-background px-4 py-3">
+      <div className="border-b bg-background px-4 py-3 overflow-x-auto">
         <ToggleGroup
           type="single"
           value={effect}
           onValueChange={(value) => {
             if (value) setEffect(value as ShaderEffect);
           }}
-          className="w-full max-w-md mx-auto justify-center"
+          className="w-max min-w-full md:w-full md:max-w-md mx-auto justify-center"
           variant="outline"
           spacing={0}
         >
-          <ToggleGroupItem value="pixelation" className="flex-1">
+          <ToggleGroupItem value="pixelation" className="flex-1 whitespace-nowrap">
             Pixelation
           </ToggleGroupItem>
-          <ToggleGroupItem value="dithering" className="flex-1">
+          <ToggleGroupItem value="dithering" className="flex-1 whitespace-nowrap">
             Dithering
           </ToggleGroupItem>
-          <ToggleGroupItem value="chromatic" className="flex-1">
+          <ToggleGroupItem value="chromatic" className="flex-1 whitespace-nowrap">
             Chromatic
           </ToggleGroupItem>
-          <ToggleGroupItem value="grid" className="flex-1">
+          <ToggleGroupItem value="grid" className="flex-1 whitespace-nowrap">
             Grid
           </ToggleGroupItem>
-          <ToggleGroupItem value="holographic" className="flex-1">
+          <ToggleGroupItem value="holographic" className="flex-1 whitespace-nowrap">
             Holographic
           </ToggleGroupItem>
         </ToggleGroup>
